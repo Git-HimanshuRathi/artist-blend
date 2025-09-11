@@ -9,24 +9,21 @@ import (
 )
 
 func main() {
-	// Set Gin to release mode
 	gin.SetMode(gin.ReleaseMode)
 
-	// Connect to MongoDB
 	config.ConnectDB()
 
 	router := gin.Default()
 
-	// Configure CORS for frontend
+
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://127.0.0.1:5173"},
+		AllowOrigins:     []string{"http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:8080"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
 
-	// Configure trusted proxies
 	router.SetTrustedProxies([]string{"127.0.0.1"})
 
 	router.GET("/", func(c *gin.Context) {
@@ -35,22 +32,42 @@ func main() {
 		})
 	})
 	
-	// Authentication routes
 	router.GET("/login", gin.WrapF(handlers.LoginHandler))
 	router.GET("/callback", gin.WrapF(handlers.CallbackHandler))
+	router.POST("/logout", gin.WrapF(handlers.LogoutHandler))
 	
-	// API routes for frontend
 	router.GET("/api/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "ok",
 			"message": "Backend is running",
 		})
 	})
+
+	router.GET("/api/auth/me", gin.WrapF(handlers.MeHandler))
+
+	router.GET("/api/search/artists", gin.WrapF(handlers.SearchArtistsHandler))
 	
-	// Placeholder routes for frontend integration
-	router.POST("/api/playlist/generate", func(c *gin.Context) {
+	router.POST("/api/playlist/generate", gin.WrapF(handlers.GeneratePlaylistHandler))
+	router.POST("/api/playlist/create", gin.WrapF(handlers.CreatePlaylistHandler))
+
+	// History endpoints
+	router.GET("/api/history", gin.WrapF(handlers.ListHistoryHandler))
+	router.POST("/api/history", gin.WrapF(handlers.SaveHistoryHandler))
+	router.DELETE("/api/history/:id", func(c *gin.Context) {
+		// Bridge to http.HandlerFunc to read raw path
+		handlers.DeleteHistoryHandler(c.Writer, c.Request)
+	})
+
+	router.POST("/api/playlist/save", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "Playlist generation endpoint - to be implemented",
+			"saved": true,
+			"message": "Playlist saved (stub)",
+		})
+	})
+	router.POST("/playlist/save", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"saved": true,
+			"message": "Playlist saved (stub)",
 		})
 	})
 	
@@ -61,8 +78,6 @@ func main() {
 		})
 	})
 
-
-	// Add error handling for server startup with HTTP (Spotify allows HTTP for 127.0.0.1)
 	if err := router.Run(":8000"); err != nil {
 		log.Fatal("Failed to start server: ", err)
 	}
