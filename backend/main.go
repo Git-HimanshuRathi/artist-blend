@@ -5,8 +5,8 @@ import (
 	"os"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
-	"./handlers"
-	"./config"
+	"github.com/Git-HimanshuRathi/artist-blend/backend/handlers"
+	"github.com/Git-HimanshuRathi/artist-blend/backend/config"
 )
 
 func main() {

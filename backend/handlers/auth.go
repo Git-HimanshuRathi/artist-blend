@@ -1,8 +1,8 @@
 package handlers
 
 import (
-    "../config"
-    "../models"
+    "github.com/Git-HimanshuRathi/artist-blend/backend/config"
+    "github.com/Git-HimanshuRathi/artist-blend/backend/models"
     "context"
     "encoding/json"
     "fmt"
