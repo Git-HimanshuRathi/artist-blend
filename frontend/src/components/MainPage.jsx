@@ -28,7 +28,6 @@ const MainPage = () => {
     } catch (error) {
       console.error('Error generating playlist:', error);
       
-      // Mock data for demo purposes
       const mockTracks = [
         {
           id: "1",

@@ -17,8 +17,7 @@ import (
     "go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Read environment variables at request time to ensure they are available even if
-// .env is loaded in main after package initialization.
+
 func getSpotifyRedirectURI() string {
     if v := os.Getenv("SPOTIFY_REDIRECT_URI"); v != "" {
         return v
@@ -26,14 +25,17 @@ func getSpotifyRedirectURI() string {
     return "http://127.0.0.1:8000/callback"
 }
 
-// Frontend base URL to redirect after login
 func getFrontendBaseURL() string {
     if v := os.Getenv("FRONTEND_URL"); v != "" {
         return v
     }
-    // default dev URL (use 127.0.0.1 to match cookie host)
+
     return "http://127.0.0.1:8080"
 }
+
+
+// AUTH 
+
 
 // Step 1: Login redirect
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +166,6 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
-// Optional: simple logout endpoint (stateless; frontend clears local state)
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
     // Clear cookie
     http.SetCookie(w, &http.Cookie{
@@ -192,7 +193,7 @@ func MeHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(map[string]string{"spotify_id": c.Value})
 }
 
-// Helper: App-only access token via Client Credentials for public data (e.g., search)
+// Helper: App-only access token via Client Credentials for public data 
 func getAppAccessToken() (string, error) {
     clientID := os.Getenv("SPOTIFY_CLIENT_ID")
     clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
@@ -258,7 +259,6 @@ func SearchArtistsHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Stream through the JSON as-is
     w.Header().Set("Content-Type", "application/json")
     if _, err := io.Copy(w, resp.Body); err != nil {
         http.Error(w, "failed to stream response", http.StatusInternalServerError)

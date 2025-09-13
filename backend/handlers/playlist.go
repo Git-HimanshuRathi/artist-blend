@@ -31,7 +31,7 @@ type generatePlaylistResponse struct {
     Tracks []simplifiedTrack `json:"tracks"`
 }
 
-// GeneratePlaylistHandler builds a recommended track list using Spotify seeds
+// GeneratePlaylistHandler
 func GeneratePlaylistHandler(w http.ResponseWriter, r *http.Request) {
     var req generatePlaylistRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -49,7 +49,6 @@ func GeneratePlaylistHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Resolve artist names to IDs (take up to 5)
     var seedIDs []string
     for _, name := range req.Artists {
         n := strings.TrimSpace(name)
@@ -93,8 +92,6 @@ func GeneratePlaylistHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Fetch top tracks for each selected artist and combine
-    // Limit total to 20 tracks, deduplicate by ID, and interleave artists
     type artistTracks struct {
         artistID string
         tracks   []simplifiedTrack
@@ -161,9 +158,7 @@ func GeneratePlaylistHandler(w http.ResponseWriter, r *http.Request) {
         }()
     }
 
-    // Interleave tracks to balance artists, then cap at 20
     var out []simplifiedTrack
-    // Make a stable order by artistID to keep deterministic output across calls
     sort.SliceStable(combined, func(i, j int) bool { return combined[i].artistID < combined[j].artistID })
     picked := 0
     idx := 0
@@ -196,7 +191,6 @@ type createPlaylistResponse struct {
     URL string `json:"url"`
 }
 
-// CreatePlaylistHandler creates a playlist in the authenticated user's Spotify account and adds tracks
 func CreatePlaylistHandler(w http.ResponseWriter, r *http.Request) {
     var req createPlaylistRequest
     if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -208,7 +202,7 @@ func CreatePlaylistHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Fetch the most recently updated user (simplified auth model for dev)
+    // Fetch the most recently updated user 
     collection := config.DB.Collection("users")
     ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
     defer cancel()
@@ -232,7 +226,6 @@ func CreatePlaylistHandler(w http.ResponseWriter, r *http.Request) {
         playlistName = "ArtistBlend Playlist"
     }
 
-    // Create empty playlist
     body := map[string]any{
         "name":        playlistName,
         "description": "Created with ArtistBlend",
@@ -298,7 +291,6 @@ func CreatePlaylistHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(createPlaylistResponse{URL: externalURL})
 }
 
-// History models
 type historyEntry struct {
     ID        string           `bson:"_id,omitempty" json:"id"`
     SpotifyID string           `bson:"spotify_id" json:"spotifyId"`
@@ -316,7 +308,6 @@ func getUserIDFromCookie(r *http.Request) (string, bool) {
     return c.Value, true
 }
 
-// POST /api/history
 func SaveHistoryHandler(w http.ResponseWriter, r *http.Request) {
     userID, ok := getUserIDFromCookie(r)
     if !ok {
@@ -352,7 +343,6 @@ func SaveHistoryHandler(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(entry)
 }
 
-// GET /api/history
 func ListHistoryHandler(w http.ResponseWriter, r *http.Request) {
     userID, ok := getUserIDFromCookie(r)
     if !ok {

@@ -11,7 +11,6 @@ const api = axios.create({
   }
 });
 
-// Request interceptor for auth
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('authToken');
@@ -25,7 +24,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -49,7 +47,6 @@ export const generatePlaylist = async (artists) => {
   } catch (error) {
     console.error('Error generating playlist:', error);
     
-    // For demo purposes, throw error to trigger mock data
     throw new Error('Backend not available - using mock data');
   }
 };
@@ -76,6 +73,10 @@ export const getUserPlaylists = async () => {
 
 export const authenticateSpotify = async () => {
   try {
+    // Store current page to redirect back after login
+    const currentPath = window.location.pathname;
+    localStorage.setItem('loginRedirectPath', currentPath);
+    
     // Redirect to the Go backend's login endpoint
     window.location.href = `${API_BASE_URL}/login`;
   } catch (error) {

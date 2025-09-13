@@ -3,11 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Music, Play, Heart, ExternalLink } from "lucide-react";
 import { createSpotifyPlaylist, saveHistory, authenticateSpotify } from "@/lib/api";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import LoginModal from "./LoginModal";
 
 const TrackList = ({ tracks, playlistTitle, artists = [] }) => {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginAction, setLoginAction] = useState("");
+  const { isLoggedIn } = useAuth();
   if (tracks.length === 0) {
     return (
       <div className="text-center py-12">
@@ -70,20 +75,6 @@ const TrackList = ({ tracks, playlistTitle, artists = [] }) => {
 
               {/* Actions */}
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="opacity-0 group-hover:opacity-100 transition-smooth hover:bg-primary/20"
-                >
-                  <Heart className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="opacity-0 group-hover:opacity-100 transition-smooth hover:bg-primary/20"
-                >
-                  <Play className="w-4 h-4" />
-                </Button>
                 {track.spotifyUrl && (
                   <Button
                     variant="ghost"
@@ -109,6 +100,12 @@ const TrackList = ({ tracks, playlistTitle, artists = [] }) => {
           className="glow-effect flex-1"
           disabled={creating || tracks.length === 0}
           onClick={async () => {
+            if (!isLoggedIn) {
+              setLoginAction("play all songs");
+              setShowLoginModal(true);
+              return;
+            }
+            
             try {
               setCreateError("")
               setCreating(true)
@@ -178,6 +175,12 @@ const TrackList = ({ tracks, playlistTitle, artists = [] }) => {
           className="flex-1"
           disabled={creating || tracks.length === 0}
           onClick={async () => {
+            if (!isLoggedIn) {
+              setLoginAction("create a playlist");
+              setShowLoginModal(true);
+              return;
+            }
+            
             try {
               setCreateError("");
               setCreating(true);
@@ -205,6 +208,12 @@ const TrackList = ({ tracks, playlistTitle, artists = [] }) => {
       {createError && (
         <div className="text-sm text-red-500">{createError}</div>
       )}
+      
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action={loginAction}
+      />
     </div>
   );
 };

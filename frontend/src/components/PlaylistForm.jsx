@@ -3,19 +3,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { Loader2, Music, AlertCircle } from "lucide-react";
+import { Loader2, Music, AlertCircle, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { searchArtists } from "@/lib/api";
+import SelectedArtists from "./SelectedArtists";
+import { useAuth } from "@/hooks/useAuth";
+import LoginModal from "./LoginModal";
+import { useToast } from "@/hooks/use-toast";
 
 const PlaylistForm = ({ onSubmit, isLoading }) => {
   const [artistInput, setArtistInput] = useState("");
+  const [selectedArtists, setSelectedArtists] = useState([]);
   const [error, setError] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isLoggedIn } = useAuth();
+  const { toast } = useToast();
 
-  // Derive the fragment after the last comma for live search
-  const currentFragment = artistInput.split(",").slice(-1)[0].trim();
+  // Restore selected artists from localStorage after login
+  useEffect(() => {
+    if (isLoggedIn) {
+      const savedArtists = localStorage.getItem('pendingArtists');
+      if (savedArtists) {
+        try {
+          const artists = JSON.parse(savedArtists);
+          if (Array.isArray(artists) && artists.length >= 3) {
+            setSelectedArtists(artists);
+            // Clear the saved artists after restoring
+            localStorage.removeItem('pendingArtists');
+            // Show toast notification
+            toast({
+              title: "Artists Restored!",
+              description: `Your selected artists (${artists.join(", ")}) have been restored.`,
+            });
+          }
+        } catch (error) {
+          console.error('Error parsing saved artists:', error);
+          localStorage.removeItem('pendingArtists');
+        }
+      }
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     let abort = false;
@@ -23,18 +53,20 @@ const PlaylistForm = ({ onSubmit, isLoading }) => {
 
     setSearchError("");
 
-    // Only search when there is a fragment of at least 2 characters
-    if (currentFragment.length >= 2 && !isLoading) {
+    // Only search when there is input of at least 2 characters
+    if (artistInput.length >= 2 && !isLoading) {
       setIsSearching(true);
       timerId = setTimeout(async () => {
         try {
-          const data = await searchArtists(currentFragment);
+          const data = await searchArtists(artistInput);
           if (abort) return;
           const items = data?.artists?.items || [];
           setSuggestions(items);
+          setSearchError(""); // Clear any previous errors
         } catch (e) {
           if (abort) return;
-          setSearchError("Failed to fetch suggestions");
+          console.error('Search error:', e);
+          setSearchError("Search unavailable - you can still type artist names manually");
           setSuggestions([]);
         } finally {
           if (!abort) setIsSearching(false);
@@ -49,45 +81,49 @@ const PlaylistForm = ({ onSubmit, isLoading }) => {
       abort = true;
       if (timerId) clearTimeout(timerId);
     };
-  }, [currentFragment, isLoading]);
+  }, [artistInput, isLoading]);
 
-  const addSuggestionToInput = (artistName) => {
+  const addArtistToSelected = (artistName) => {
     setError("");
-    const parts = artistInput.split(",");
-    if (parts.length === 0 || artistInput.trim() === "") {
-      setArtistInput(artistName);
+    // Check if artist is already selected
+    if (selectedArtists.includes(artistName)) {
+      setError("This artist is already selected");
       return;
     }
-    parts[parts.length - 1] = ` ${artistName}`; // keep a space before name for readability
-    const next = parts
-      .map((p) => p.trim())
-      .filter((p) => p.length > 0)
-      .join(", ");
-    setArtistInput(next);
-    setSuggestions([]);
+    
+    // Add artist to selected list
+    setSelectedArtists(prev => [...prev, artistName]);
+    setArtistInput(""); // Clear the input
+    setSuggestions([]); // Clear suggestions
+  };
+
+  const removeArtist = (index) => {
+    setSelectedArtists(prev => prev.filter((_, i) => i !== index));
+    setError("");
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setError("");
 
-    const artists = artistInput
-      .split(",")
-      .map(artist => artist.trim())
-      .filter(artist => artist.length > 0);
-
-    if (artists.length < 3) {
-      setError("Please enter at least 3 artists separated by commas");
+    if (selectedArtists.length < 3) {
+      setError("Please select at least 3 artists");
       return;
     }
 
-    onSubmit(artists);
+    if (!isLoggedIn) {
+      // Save selected artists to localStorage before showing login modal
+      localStorage.setItem('pendingArtists', JSON.stringify(selectedArtists));
+      setShowLoginModal(true);
+      return;
+    }
+
+    // Clear any saved artists from localStorage before submitting
+    localStorage.removeItem('pendingArtists');
+    onSubmit(selectedArtists);
   };
 
-  const artistCount = artistInput
-    .split(",")
-    .map(artist => artist.trim())
-    .filter(artist => artist.length > 0).length;
+  const artistCount = selectedArtists.length;
 
   return (
     <Card className="p-6 card-shadow bg-card/80 backdrop-blur-sm">
@@ -102,19 +138,49 @@ const PlaylistForm = ({ onSubmit, isLoading }) => {
           </p>
         </div>
 
+        {/* Selected Artists Display */}
+        <SelectedArtists 
+          artists={selectedArtists} 
+          onRemoveArtist={removeArtist} 
+        />
+
         <div className="space-y-2">
           <Label htmlFor="artists" className="text-base font-medium">
-            Artist Names
+            Search Artists
           </Label>
-          <Input
-            id="artists"
-            type="text"
-            placeholder="e.g., Taylor Swift, Ed Sheeran, Billie Eilish"
-            value={artistInput}
-            onChange={(e) => setArtistInput(e.target.value)}
-            className="text-base py-3"
-            disabled={isLoading}
-          />
+          <div className="relative">
+            <Input
+              id="artists"
+              type="text"
+              placeholder="Search for artists to add..."
+              value={artistInput}
+              onChange={(e) => setArtistInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && artistInput.trim() && !selectedArtists.includes(artistInput.trim())) {
+                  e.preventDefault();
+                  addArtistToSelected(artistInput.trim());
+                }
+              }}
+              className="text-base py-3 pr-10"
+              disabled={isLoading}
+            />
+            {artistInput && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                onClick={() => {
+                  if (artistInput.trim() && !selectedArtists.includes(artistInput.trim())) {
+                    addArtistToSelected(artistInput.trim());
+                  }
+                }}
+                disabled={!artistInput.trim() || selectedArtists.includes(artistInput.trim())}
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
           {/* Suggestions */}
           {(isSearching || suggestions.length > 0 || searchError) && (
             <div className="mt-2 border rounded-md bg-background">
@@ -131,7 +197,7 @@ const PlaylistForm = ({ onSubmit, isLoading }) => {
                       <button
                         type="button"
                         className="w-full text-left px-3 py-2 hover:bg-accent flex items-center space-x-3"
-                        onClick={() => addSuggestionToInput(artist.name)}
+                        onClick={() => addArtistToSelected(artist.name)}
                       >
                         {artist.images && artist.images[2] && (
                           <img
@@ -157,7 +223,7 @@ const PlaylistForm = ({ onSubmit, isLoading }) => {
           )}
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">
-              Separate artists with commas
+              Click suggestions or use the + button to add artists
             </span>
             <span className={`font-medium ${
               artistCount >= 3 ? "text-music-green" : "text-muted-foreground"
@@ -199,6 +265,12 @@ const PlaylistForm = ({ onSubmit, isLoading }) => {
           </div>
         )}
       </form>
+      
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        action="create a playlist"
+      />
     </Card>
   );
 };

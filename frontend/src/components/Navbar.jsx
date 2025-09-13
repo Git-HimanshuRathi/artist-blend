@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Music, Home, History, List } from "lucide-react";
+import { Music, Home, History, List, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { authenticateSpotify, logout } from "@/lib/api";
 import { useEffect, useMemo, useState } from "react";
@@ -11,24 +11,60 @@ const Navbar = () => {
   const { toast } = useToast();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // Check authentication state
+  useEffect(() => {
+    const checkAuthState = async () => {
+      const token = localStorage.getItem('authToken');
+      const isSuccess = new URLSearchParams(location.search).get("auth") === "success";
+      const hasSession = sessionStorage.getItem('spotifyAuth') === 'true';
+      
+      // Also check with backend if we have a session cookie
+      let backendAuth = false;
+      if (hasSession || isSuccess) {
+        try {
+          const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/api/auth/me`, {
+            credentials: 'include'
+          });
+          backendAuth = response.ok;
+        } catch (e) {
+          // Ignore errors, just use other indicators
+        }
+      }
+      
+      // Consider logged in if we have any of these indicators
+      setIsLoggedIn(!!token || isSuccess || hasSession || backendAuth);
+    };
+
+    checkAuthState();
+    
+    // Listen for storage changes (in case auth state changes in another tab)
+    const handleStorageChange = () => checkAuthState();
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [location.search]);
+
   // Detect login success via URL param and show toast
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("auth") === "success") {
       toast({ title: "Logged in", description: "Successfully logged in with Spotify" });
-      // Clean the URL
-      navigate(location.pathname, { replace: true });
-    }
-  }, [location.search]);
-
-  // Very simple login state: consider logged in if we have a user stored
-  // In this minimal setup, we toggle state on auth success
-  useEffect(() => {
-    const isSuccess = new URLSearchParams(location.search).get("auth") === "success";
-    if (isSuccess) {
       setIsLoggedIn(true);
+      // Set session storage to remember login state
+      sessionStorage.setItem('spotifyAuth', 'true');
+      
+      // Check if we need to redirect to a specific page
+      const redirectPath = localStorage.getItem('loginRedirectPath');
+      if (redirectPath && redirectPath !== '/') {
+        // Clear the redirect path and navigate to the stored path
+        localStorage.removeItem('loginRedirectPath');
+        navigate(redirectPath, { replace: true });
+      } else {
+        // Clean the URL and stay on current page
+        navigate(location.pathname, { replace: true });
+      }
     }
-  }, [location.search]);
+  }, [location.search, navigate, toast]);
 
   const getNavItems = () => {
     if (location.pathname === "/") {
@@ -85,11 +121,12 @@ const Navbar = () => {
               })}
             </div>
             
-            {/* Login/Logout Button - only show on home page */}
-            {location.pathname === "/" && (
+            {/* Login/Logout Button - show on home page and playlist page */}
+            {(location.pathname === "/" || location.pathname === "/playlist") && (
               isLoggedIn ? (
                 <Button
                   variant="outline"
+                  size="sm"
                   onClick={async () => {
                     try {
                       await logout();
@@ -104,14 +141,21 @@ const Navbar = () => {
                     setIsLoggedIn(false);
                     toast({ title: "Logged out", description: "You have been logged out" });
                     // Hard redirect to ensure clean session
-                    window.location.href = "/";
+                    window.location.href = location.pathname;
                   }}
+                  className="flex items-center space-x-1"
                 >
-                  Log out
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Log out</span>
                 </Button>
               ) : (
-                <Button className="glow-effect" onClick={authenticateSpotify}>
-                  Log in
+                <Button 
+                  className="glow-effect flex items-center space-x-1" 
+                  size="sm"
+                  onClick={authenticateSpotify}
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span className="hidden sm:inline">Log in</span>
                 </Button>
               )
             )}

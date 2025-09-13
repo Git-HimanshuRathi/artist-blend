@@ -15,9 +15,8 @@ func main() {
 
 	router := gin.Default()
 
-
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:8080"},
+		AllowOrigins:     []string{"http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:8080", "http://localhost:8081", "http://127.0.0.1:8081"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -50,11 +49,9 @@ func main() {
 	router.POST("/api/playlist/generate", gin.WrapF(handlers.GeneratePlaylistHandler))
 	router.POST("/api/playlist/create", gin.WrapF(handlers.CreatePlaylistHandler))
 
-	// History endpoints
 	router.GET("/api/history", gin.WrapF(handlers.ListHistoryHandler))
 	router.POST("/api/history", gin.WrapF(handlers.SaveHistoryHandler))
 	router.DELETE("/api/history/:id", func(c *gin.Context) {
-		// Bridge to http.HandlerFunc to read raw path
 		handlers.DeleteHistoryHandler(c.Writer, c.Request)
 	})
 
