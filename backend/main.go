@@ -46,6 +46,7 @@ func main() {
 		c.JSON(200, gin.H{
 			"status": "ok",
 			"message": "Backend is running",
+			"port": port,
 		})
 	})
 
@@ -88,6 +89,8 @@ func main() {
 		port = "8000"
 	}
 
+	log.Printf("Starting server on port %s", port)
+	
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server: ", err)
 	}
