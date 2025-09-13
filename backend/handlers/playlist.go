@@ -10,7 +10,7 @@ import (
     "context"
     "time"
 
-    "github.com/Git-HimanshuRathi/artist-blend/backend/config"
+    "../config"
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/mongo/options"
 )

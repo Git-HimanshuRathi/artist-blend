@@ -36,6 +36,7 @@ This guide will help you deploy your ArtistBlend application to Render.
    - **Build Command**: `go build -o main .`
    - **Start Command**: `./main`
    - **Instance Type**: Free
+   - **Port**: `10000` (or leave blank for auto-detection)
 
 ### 2.2 Set Environment Variables
 Add these environment variables in Render dashboard:
@@ -112,11 +113,17 @@ VITE_API_URL=https://your-backend-service.onrender.com
 
 ### Common Issues:
 
-1. **CORS Errors**: Make sure `FRONTEND_URL` in backend matches your frontend domain
-2. **Spotify Login Issues**: Verify redirect URI in Spotify dashboard
-3. **Database Connection**: Check MongoDB Atlas connection string
-4. **Build Failures**: Check Render build logs
-5. **Cold Start**: Free tier services sleep after 15 minutes of inactivity
+1. **Build Failures (Exit Status 1)**: 
+   - Check that all import paths are correct
+   - Ensure go.mod is in the backend directory
+   - Verify build command: `go build -o main .`
+   - Check Render logs for specific error messages
+
+2. **CORS Errors**: Make sure `FRONTEND_URL` in backend matches your frontend domain
+3. **Spotify Login Issues**: Verify redirect URI in Spotify dashboard
+4. **Database Connection**: Check MongoDB Atlas connection string
+5. **Port Issues**: Ensure PORT environment variable is set correctly
+6. **Cold Start**: Free tier services sleep after 15 minutes of inactivity
 
 ### Useful Commands:
 
