@@ -140,8 +140,8 @@ const Navbar = () => {
                     } catch (e) {}
                     setIsLoggedIn(false);
                     toast({ title: "Logged out", description: "You have been logged out" });
-                    // Hard redirect to ensure clean session
-                    window.location.href = location.pathname;
+                    // Use client-side navigation to avoid server 404s on SPA routes
+                    navigate(location.pathname, { replace: true });
                   }}
                   className="flex items-center space-x-1"
                 >
