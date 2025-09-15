@@ -33,6 +33,18 @@ func getFrontendBaseURL() string {
 	return "http://127.0.0.1:8080"
 }
 
+func getCookiePolicy() (bool, http.SameSite) {
+	base := getFrontendBaseURL()
+	secure := false
+	sameSite := http.SameSiteLaxMode
+
+	if strings.HasPrefix(strings.ToLower(base), "https://") {
+		secure = true
+		sameSite = http.SameSiteNoneMode
+	}
+	return secure, sameSite
+}
+
 // AUTH
 
 // Step 1: Login redirect
@@ -149,13 +161,14 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set session cookie with spotify_id
+	secure, sameSite := getCookiePolicy()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "ab_sid",
 		Value:    spotifyID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   secure,
+		SameSite: sameSite,
 		MaxAge:   60 * 60 * 24 * 7, // 7 days
 	})
 
@@ -166,13 +179,14 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	// Clear cookie
+	secure, sameSite := getCookiePolicy()
 	http.SetCookie(w, &http.Cookie{
 		Name:     "ab_sid",
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   false,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   secure,
+		SameSite: sameSite,
 		MaxAge:   -1,
 	})
 	w.Header().Set("Content-Type", "application/json")
