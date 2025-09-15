@@ -17,9 +17,14 @@ func ConnectDB() {
 		log.Println("No .env file found")
 	}
 
-	uri := os.Getenv("MONGODB_URI")
-	// In production, require MONGODB_URI to be set to avoid falling back to localhost.
-	// Also fail-fast on hosted platforms that inject PORT (e.g., Render).
+	uri := os.Getenv("MONGO_URI")
+	if os.Getenv("PORT") != "" {
+		hasMongo := "absent"
+		if os.Getenv("MONGO_URI") != "" {
+			hasMongo = "present"
+		}
+		log.Printf("Env check: PORT=%s, GIN_MODE=%s, MONGO_URI=%s", os.Getenv("PORT"), os.Getenv("GIN_MODE"), hasMongo)
+	}
 	if (os.Getenv("GIN_MODE") == "release" || os.Getenv("PORT") != "") && uri == "" {
 		log.Fatal("MONGODB_URI is not set; configure it in your deployment environment")
 	}
