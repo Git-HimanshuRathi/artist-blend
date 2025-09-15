@@ -29,12 +29,12 @@ func main() {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{frontendURL, "http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:8080", "http://127.0.0.1:8080", "http://localhost:8081", "http://127.0.0.1:8081"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Cookie"},
+		ExposeHeaders:    []string{"Content-Length", "Set-Cookie"},
 		AllowCredentials: true,
 	}))
 
-	router.SetTrustedProxies([]string{"127.0.0.1"})
+	router.SetTrustedProxies(nil)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{

@@ -119,13 +119,22 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	userResp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		fmt.Printf("Error fetching user profile: %v\n", err)
 		http.Error(w, "Failed to fetch user profile", http.StatusInternalServerError)
 		return
 	}
 	defer userResp.Body.Close()
 
+	if userResp.StatusCode < 200 || userResp.StatusCode >= 300 {
+		body, _ := io.ReadAll(userResp.Body)
+		fmt.Printf("Spotify profile API error: status %d, body: %s\n", userResp.StatusCode, string(body))
+		http.Error(w, "Spotify profile API error", http.StatusBadGateway)
+		return
+	}
+
 	var profile map[string]interface{}
 	if err := json.NewDecoder(userResp.Body).Decode(&profile); err != nil {
+		fmt.Printf("Error decoding user profile: %v\n", err)
 		http.Error(w, "Failed to decode user profile", http.StatusInternalServerError)
 		return
 	}
