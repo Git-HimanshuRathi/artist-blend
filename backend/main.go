@@ -3,10 +3,11 @@ package main
 import (
 	"log"
 	"os"
-	"github.com/gin-gonic/gin"
-	"github.com/gin-contrib/cors"
-	"github.com/Git-HimanshuRathi/artist-blend/backend/handlers"
+
 	"github.com/Git-HimanshuRathi/artist-blend/backend/config"
+	"github.com/Git-HimanshuRathi/artist-blend/backend/handlers"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -16,10 +17,13 @@ func main() {
 
 	router := gin.Default()
 
+	port := os.Getenv("PORT")
+
 	// Get frontend URL from environment variable
 	frontendURL := os.Getenv("FRONTEND_URL")
 	if frontendURL == "" {
-		frontendURL = "http://localhost:8080"
+		// Default to 127.0.0.1 to match handler redirects and avoid cookie issues
+		frontendURL = "http://127.0.0.1:8080"
 	}
 
 	router.Use(cors.New(cors.Config{
@@ -37,23 +41,27 @@ func main() {
 			"message": "Hello from ArtistBlend Backend with MongoDB!",
 		})
 	})
-	
+
 	router.GET("/login", gin.WrapF(handlers.LoginHandler))
 	router.GET("/callback", gin.WrapF(handlers.CallbackHandler))
 	router.POST("/logout", gin.WrapF(handlers.LogoutHandler))
-	
+
 	router.GET("/api/health", func(c *gin.Context) {
+		currentPort := os.Getenv("PORT")
+		if currentPort == "" {
+			currentPort = "8000"
+		}
 		c.JSON(200, gin.H{
-			"status": "ok",
+			"status":  "ok",
 			"message": "Backend is running",
-			"port": port,
+			"port":    currentPort,
 		})
 	})
 
 	router.GET("/api/auth/me", gin.WrapF(handlers.MeHandler))
 
 	router.GET("/api/search/artists", gin.WrapF(handlers.SearchArtistsHandler))
-	
+
 	router.POST("/api/playlist/generate", gin.WrapF(handlers.GeneratePlaylistHandler))
 	router.POST("/api/playlist/create", gin.WrapF(handlers.CreatePlaylistHandler))
 
@@ -65,32 +73,26 @@ func main() {
 
 	router.POST("/api/playlist/save", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"saved": true,
+			"saved":   true,
 			"message": "Playlist saved (stub)",
 		})
 	})
 	router.POST("/playlist/save", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"saved": true,
+			"saved":   true,
 			"message": "Playlist saved (stub)",
 		})
 	})
-	
-	router.GET("/api/playlist/user", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"playlists": []string{},
-			"message": "User playlists endpoint - to be implemented",
-		})
-	})
+
+	router.GET("/api/playlist/user", gin.WrapF(handlers.ListUserPlaylistsHandler))
 
 	// Get port from environment variable (Render uses PORT)
-	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8000"
 	}
 
 	log.Printf("Starting server on port %s", port)
-	
+
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server: ", err)
 	}

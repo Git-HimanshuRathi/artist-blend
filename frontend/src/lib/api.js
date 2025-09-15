@@ -1,5 +1,6 @@
 import axios from 'axios';
 
+// Use 127.0.0.1 to match backend defaults and avoid cookie scoping issues
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
 const api = axios.create({
@@ -28,11 +29,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.data || error.message);
-    if (error.response?.status === 401) {
-      window.location.href = `${API_BASE_URL}/login`;
-      return Promise.reject(error);
-    }
-    
+    // Do not auto-redirect on 401; let UI decide to show login modal
     return Promise.reject(error);
   }
 );

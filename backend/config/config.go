@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,6 +33,6 @@ func ConnectDB() {
 		log.Fatal(err)
 	}
 
-	DB = client.Database("artist_blend")
+	DB = client.Database("artist-blend-db")
 	log.Println("Connected to MongoDB!")
 }
