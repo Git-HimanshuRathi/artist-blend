@@ -18,8 +18,9 @@ func ConnectDB() {
 	}
 
 	uri := os.Getenv("MONGODB_URI")
-	// In production, require MONGODB_URI to be set to avoid falling back to localhost
-	if os.Getenv("GIN_MODE") == "release" && uri == "" {
+	// In production, require MONGODB_URI to be set to avoid falling back to localhost.
+	// Also fail-fast on hosted platforms that inject PORT (e.g., Render).
+	if (os.Getenv("GIN_MODE") == "release" || os.Getenv("PORT") != "") && uri == "" {
 		log.Fatal("MONGODB_URI is not set; configure it in your deployment environment")
 	}
 	if uri == "" {
@@ -37,6 +38,6 @@ func ConnectDB() {
 		log.Fatal(err)
 	}
 
-	DB = client.Database("artist-blend-db")
+	DB = client.Database("artist-blend")
 	log.Println("Connected to MongoDB!")
 }
