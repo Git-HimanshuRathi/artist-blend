@@ -6,8 +6,6 @@ services:
     buildCommand: cd backend && go build -o main .
     startCommand: cd backend && ./main
     envVars:
-      - key: PORT
-        value: 10000
       - key: GIN_MODE
         value: release
       - key: SPOTIFY_CLIENT_ID

@@ -18,6 +18,10 @@ func ConnectDB() {
 	}
 
 	uri := os.Getenv("MONGODB_URI")
+	// In production, require MONGODB_URI to be set to avoid falling back to localhost
+	if os.Getenv("GIN_MODE") == "release" && uri == "" {
+		log.Fatal("MONGODB_URI is not set; configure it in your deployment environment")
+	}
 	if uri == "" {
 		uri = "mongodb://localhost:27017"
 	}
