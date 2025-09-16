@@ -1,0 +1,30 @@
+# Global ignores when building from repo root
+.git
+.gitignore
+node_modules
+**/node_modules
+**/.cache
+**/.vite
+**/dist
+**/build
+**/.DS_Store
+.env
+.env.*
+docker-compose.override.yml
+*.log
+**/bun.lockb
+**/pnpm-lock.yaml
+**/yarn.lock
+**/.eslintcache
+
+# Frontend artifacts (when context is root)
+frontend/node_modules
+frontend/dist
+
+# Backend artifacts (when context is root)
+backend/main
+backend/bin
+backend/tmp
+backend/.tmp
+
+

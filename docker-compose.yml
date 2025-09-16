@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: artistblend-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: artistblend-backend
+    depends_on:
+      - mongo
+    environment:
+      - PORT=10000
+      - MONGO_URI=mongodb://mongo:27017/artistblend
+      - FRONTEND_URL=http://localhost:8080
+      # Set your real Spotify creds via .env or environment overrides
+      - SPOTIFY_CLIENT_ID=${SPOTIFY_CLIENT_ID}
+      - SPOTIFY_CLIENT_SECRET=${SPOTIFY_CLIENT_SECRET}
+      - SPOTIFY_REDIRECT_URI=http://localhost:8080/callback
+      - GIN_MODE=release
+    ports:
+      - "10000:10000"
+    networks:
+      - artistblend
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Build the app to use same-origin calls (proxied by nginx)
+        - VITE_API_URL=/
+    container_name: artistblend-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    networks:
+      - artistblend
+
+networks:
+  artistblend:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
+
+
